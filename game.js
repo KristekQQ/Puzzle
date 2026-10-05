@@ -6,7 +6,7 @@
   const cols = size(config.columns), rows = size(config.rows), total = cols * rows;
   const capacity = total;
   let boardWidth = 480, boardHeight = 320, pw = boardWidth / cols, ph = boardHeight / rows;
-  const ui = Object.fromEntries(['count', 'timer', 'message', 'draw-piece', 'recycle', 'return-pieces', 'inventory-count', 'page-label', 'previous-page', 'next-page', 'recycler-count'].map(id => [id, document.getElementById(id)]));
+  const ui = Object.fromEntries(['count', 'timer', 'message', 'draw-piece', 'recycle', 'return-pieces', 'inventory-count', 'page-label', 'previous-page', 'next-page', 'recycler-count', 'choose-reward', 'preview', 'shuffle', 'fullscreen'].map(id => [id, document.getElementById(id)]));
   document.querySelector('#total').textContent = total;
   document.querySelector('#art-count').textContent = `${total} DÍLKŮ · ILUSTRACE`;
   document.querySelector('#grid-size').textContent = `${cols} × ${rows}`;
@@ -69,7 +69,7 @@
     });
   }
   function reset() {
-    if (!ready) return;
+    if (!ready || complete()) return;
     dragging = null; canvas.classList.remove('dragging'); templates = []; pieces = []; recyclerIds = [];
     placedTypes.clear(); nextId = 1; page = 0; started = false; elapsed = 0; lastTick = performance.now();
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
@@ -80,6 +80,7 @@
     arrange(); updateStats(); setMessage('Začni tlačítkem „Nový dílek“. Každé losování může přinést i duplicitu.'); draw();
   }
   function randomPiece() {
+    if (!ready || complete() || dragging) return;
     const t = templates[Math.floor(Math.random() * total)];
     const p = { ...t, id: nextId++, locked: false, scale: 1, x: 0, y: 0 };
     pieces.push(p); page = Math.floor((inventory().length - 1) / capacity);
@@ -90,14 +91,14 @@
   }
   function isDuplicate(p) { return placedTypes.has(p.typeId) || pieces.some(other => other.id !== p.id && other.typeId === p.typeId); }
   function recycle() {
-    if (recyclerIds.length !== 3 || dragging) return;
+    if (complete() || recyclerIds.length !== 3 || dragging) return;
     const consumed = new Set(recyclerIds);
     pieces = pieces.filter(p => !consumed.has(p.id)); recyclerIds = [];
     const p = randomPiece();
     setMessage(`Tři dílky vyměněny za dílek č. ${p.typeId + 1}.${isDuplicate(p) ? ' Opět duplicita — i to je součást losování.' : ' Zkus, kam patří.'}`);
   }
   function returnPieces() {
-    if (dragging) return;
+    if (complete() || dragging) return;
     const firstId = recyclerIds[0]; recyclerIds = [];
     const index = inventory().findIndex(p => p.id === firstId);
     if (index >= 0) page = Math.floor(index / capacity);
@@ -105,17 +106,24 @@
   }
   function setMessage(text) { ui.message.textContent = text; }
   function updateStats() {
+    const locked = complete();
+    document.querySelector('.game-shell').classList.toggle('completed', locked);
+    ui['choose-reward'].hidden = !locked;
+    for (const id of ['preview', 'shuffle', 'fullscreen']) ui[id].disabled = locked;
+    const brand = document.querySelector('.brand');
+    brand.setAttribute('aria-disabled', String(locked));
+    brand.tabIndex = locked ? -1 : 0;
     ui.count.textContent = placedTypes.size;
     const s = Math.floor(elapsed / 1000);
     ui.timer.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     ui['inventory-count'].textContent = inventory().length;
     ui['page-label'].textContent = `${page + 1} / ${pageCount()}`;
-    ui['previous-page'].disabled = page === 0 || !!dragging;
-    ui['next-page'].disabled = page >= pageCount() - 1 || !!dragging;
+    ui['previous-page'].disabled = locked || page === 0 || !!dragging;
+    ui['next-page'].disabled = locked || page >= pageCount() - 1 || !!dragging;
     ui['recycler-count'].textContent = `${recyclerIds.length} / 3`;
-    ui.recycle.disabled = recyclerIds.length !== 3 || !!dragging;
-    ui['return-pieces'].disabled = recyclerIds.length === 0 || !!dragging;
-    ui['draw-piece'].disabled = !ready || !!dragging;
+    ui.recycle.disabled = locked || recyclerIds.length !== 3 || !!dragging;
+    ui['return-pieces'].disabled = locked || recyclerIds.length === 0 || !!dragging;
+    ui['draw-piece'].disabled = locked || !ready || !!dragging;
   }
   function roundedRect(x, y, w, h, r, fill) {
     ctx.fillStyle = fill; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
@@ -162,7 +170,7 @@
       visibleInventory().filter(p => dragging?.p !== p).forEach(p => drawPiece(p, true));
       recyclerIds.map(id => pieces.find(p => p.id === id)).filter(p => p && dragging?.p !== p).forEach(p => drawPiece(p, true));
       if (dragging) drawPiece(dragging.p, true);
-      if (!inventory().length) {
+      if (!inventory().length && !complete()) {
         ctx.textAlign = 'center'; ctx.fillStyle = '#b5acc7'; ctx.font = '32px Georgia'; ctx.fillText('+', tray.x + tray.w / 2, tray.y + 170);
         ctx.font = 'bold 20px Arial'; ctx.fillText('TVŮJ PRVNÍ DÍLEK ČEKÁ.', tray.x + tray.w / 2, tray.y + 210);
         ctx.font = '12px Arial'; ctx.fillText('Klikni na „Nový dílek“ a zkus štěstí.', tray.x + tray.w / 2, tray.y + 238); ctx.textAlign = 'left';
@@ -180,7 +188,7 @@
     const inside = ctx.isPointInPath(p.path, (pos.x - p.x) / p.scale, (pos.y - p.y) / p.scale); ctx.restore(); return inside;
   }
   canvas.addEventListener('pointerdown', e => {
-    if (!ready || e.button !== 0 || dragging) return;
+    if (!ready || complete() || e.button !== 0 || dragging) return;
     const pos = pointer(e), visible = [...visibleInventory(), ...recyclerIds.map(id => pieces.find(p => p.id === id))];
     for (let i = visible.length - 1; i >= 0; i--) {
       const p = visible[i]; if (!p || !hit(p, pos)) continue;
@@ -203,7 +211,7 @@
       if (placedTypes.has(p.typeId)) { recyclerIds = recyclerIds.filter(id => id !== p.id); setMessage('Toto místo už je složené. Duplicitní dílek můžeš dát do šrotovače.'); }
       else {
         p.locked = true; placedTypes.add(p.typeId); recyclerIds = recyclerIds.filter(id => id !== p.id);
-        setMessage(complete() ? 'Hotovo! Všechny kousky zapadly. Užij si svůj obrázek.' : 'Zapadlo! Další kousek čeká v zásobníku nebo v novém losování.');
+        setMessage(complete() ? 'Hotovo! Hra je zamčená. Pokračuj tlačítkem „Vyber odměnu“.' : 'Zapadlo! Další kousek čeká v zásobníku nebo v novém losování.');
       }
     } else if (!cancel && dragging.moved && inRecycler) {
       if (!recyclerIds.includes(p.id) && recyclerIds.length < 3) recyclerIds.push(p.id);
@@ -217,11 +225,16 @@
   }
   canvas.addEventListener('pointerup', () => release()); canvas.addEventListener('pointercancel', () => release(true));
   ui['draw-piece'].addEventListener('click', () => { if (ready && !dragging) randomPiece(); });
+  ui['choose-reward'].addEventListener('click', () => {
+    if (complete()) document.querySelector('#reward-dialog').showModal();
+  });
+  document.querySelector('.brand').addEventListener('click', e => { if (complete()) e.preventDefault(); });
   ui.recycle.addEventListener('click', recycle); ui['return-pieces'].addEventListener('click', returnPieces);
-  for (const [id, delta] of [['previous-page', -1], ['next-page', 1]]) ui[id].addEventListener('click', () => { if (dragging) return; page = Math.max(0, Math.min(pageCount() - 1, page + delta)); arrange(); updateStats(); draw(); });
-  document.querySelector('#preview').addEventListener('click', e => { preview = !preview; e.currentTarget.setAttribute('aria-pressed', String(preview)); draw(); });
+  for (const [id, delta] of [['previous-page', -1], ['next-page', 1]]) ui[id].addEventListener('click', () => { if (complete() || dragging) return; page = Math.max(0, Math.min(pageCount() - 1, page + delta)); arrange(); updateStats(); draw(); });
+  document.querySelector('#preview').addEventListener('click', e => { if (complete()) return; preview = !preview; e.currentTarget.setAttribute('aria-pressed', String(preview)); draw(); });
   document.querySelector('#shuffle').addEventListener('click', reset);
   async function fullscreen() {
+    if (complete()) return;
     try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.querySelector('.game-shell').requestFullscreen(); }
     catch { setMessage('Prohlížeč nepodporuje celou obrazovku.'); }
   }
@@ -232,6 +245,7 @@
   window.advanceTime = ms => { if (started && !complete()) elapsed += ms; lastTick = performance.now(); updateStats(); draw(); };
   window.render_game_to_text = () => JSON.stringify({
     mode: !ready ? 'loading' : complete() ? 'complete' : 'playing', coordinates: 'Canvas logical pixels; origin top left, x right, y down.',
+    uiLocked: complete(), rewardAvailable: complete(), rewardDialogOpen: document.querySelector('#reward-dialog').open,
     width, height, board, recycler, columns: cols, rows, preview, placed: placedTypes.size, total, elapsed: Math.floor(elapsed / 1000),
     inventoryCount: inventory().length, page: page + 1, pages: pageCount(), recyclerIds, dragging: dragging?.p.id ?? null,
     pieces: pieces.map(p => ({ id: p.id, typeId: p.typeId, x: Math.round(p.x), y: Math.round(p.y), scale: p.scale,

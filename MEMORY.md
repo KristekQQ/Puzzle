@@ -10,6 +10,8 @@ Druhá iterace: hra začíná bez dílků. Tlačítko **Nový dílek** losuje ro
 
 Hra se jmenuje **Kousek**. Má české rozhraní a od edice 004 vizuál inspirovaný webem https://www.apollogames.cz/: tmavé fialové plochy, růžová pilulková tlačítka, velké úzké nadpisy, bílý zkosený panel logotypu a zlaté akcenty. Označení je KOUSEK PLAY. Od edice 005 se používá uživatelem dodaná předloha 40 Mystic Gem. Vzhled je vytvořen lokálním CSS a canvasem bez externích fontů. Běží bez frameworku, bundleru, backendu a externích služeb. Npm závislost Playwright slouží pouze testům.
 
+Po složení všech typů (edice 006) se vedle „Nový dílek“ ukáže zlaté tlačítko **Vyber odměnu**. Všechna ostatní herní tlačítka, přesouvání dílků, klávesa F a navigace přes logo se zamknou. Ochrana je i v obsluze akcí, ne pouze přes HTML disabled. Stav a čas zůstávají zachované včetně zbylých kopií a šrotovače. Výběr konkrétní odměny nebyl specifikován; tlačítko zatím otevírá dialog s potvrzením složení a výslovnou informací, že skutečný výběr bude doplněn. Zavření dialogu hru neodemkne. Novou hru po výhře aktuálně umožní nové načtení stránky.
+
 ## Mapa kódu
 
 | Soubor | Úloha |
@@ -50,15 +52,17 @@ Hra se jmenuje **Kousek**. Má české rozhraní a od edice 004 vizuál inspirov
 
 ## Spuštění a ověření
 
-Hru lze otevřít přes `index.html`. Pro testování používej HTTP: `npm start` → `http://127.0.0.1:5173`. Skript start vyžaduje Python 3 a spouští `serve.py`. HTML používá verzované URL `style.css`, `config.js` a `game.js` (`?v=005-mystic`). Při dalších úpravách assetů aktualizuj jejich verzi. Aktuální UI je označeno „MYSTIC EDITION / 005“.
+Hru lze otevřít přes `index.html`. Pro testování používej HTTP: `npm start` → `http://127.0.0.1:5173`. Skript start vyžaduje Python 3 a spouští `serve.py`. HTML používá verzované URL `style.css`, `config.js` a `game.js` (`?v=006-reward`). Při dalších úpravách assetů aktualizuj jejich verzi. Aktuální UI je označeno „REWARD EDITION / 006“.
 
 Testy: `npm install`, případně `npx playwright install chromium`, spustit server a v druhém terminálu `npm test`. Pokud server již běží, použij jej.
 
 Dne 2026-10-05 prošel test nové předlohy 40 Mystic Gem: zdroj obrázku, zachování poměru stran 1406/860, vizuální kontrola složeného obrázku a dále kompletní regrese: přetahování jako jediný způsob přesunu jednotlivých dílků, klik bez přesunu v zásobníku i šrotovači, prázdný start, náhodné dílky a deterministicky vynucené duplicity, stejné tvary kopií, skutečné přetahování při DPR 2, chybná poloha, blokace duplicitního přichycení, obsazení 1/2/3 přihrádek šrotovače, odmítnutí čtvrté, vytažení a vrácení kopií, přesná výměna 3 → 1 včetně duplicitní odměny, zachování složeného dílku, stránkování, reset, složení všech devíti míst, zastavení času, předloha, fullscreen, mobilní rozložení, konfigurace 5 × 4 a výměna v této konfiguraci. Bez JavaScriptových chyb. Vizuálně ověřen nový tmavý vzhled na desktopu, plný šrotovač, mobil a screenshot povinného web-game klienta. Reference Apollo byla prohlédnuta v prohlížeči (automatické webové otevření selhalo). Test nepokrývá fyzický dotykový displej ani všechny velikosti mřížky 1 až 12. Náhodné výsledky v testu se řídí přepsáním `Math.random` pouze v testovacím prohlížeči.
 
-Na uživatelovo hlášení, že refresh nezobrazuje klikací šrotovač, server vracel nový kód, ale stav jeho karty nebylo možné ověřit kvůli timeoutům ovládání prohlížeče. Přidáno verzování assetů a vlastní server bez mezipaměti; ověřeny HTTP 200 a no-store u HTML i JS a kompletní browser test. Přesnou původní příčinu v otevřené kartě nemáme potvrzenou. Přímá nová adresa: `http://127.0.0.1:5173/?v=005-mystic`.
+Na uživatelovo hlášení, že refresh nezobrazuje klikací šrotovač, server vracel nový kód, ale stav jeho karty nebylo možné ověřit kvůli timeoutům ovládání prohlížeče. Přidáno verzování assetů a vlastní server bez mezipaměti; ověřeny HTTP 200 a no-store u HTML i JS a kompletní browser test. Přesnou původní příčinu v otevřené kartě nemáme potvrzenou. Přímá nová adresa: `http://127.0.0.1:5173/?v=006-reward`.
 
 Pozor: export canvasu přes `toDataURL` může při `file://` selhat kvůli omezením prohlížeče; pro screenshotový test použij HTTP. Na mobilu před automatickým přetahováním posuň canvas do viditelné části stránky a po resize počkej na přepočtení layoutu.
+
+Edice 006 ověřena: kompletní `npm test`, tlačítko skryté během hry a viditelné po složení, disabled všech ovládání, ochrana proti přímému dispatchi click, klik a tažení zbylých kopií v zásobníku i plném šrotovači, klávesa F, zastavený čas, dialog otevření/zavření a zachování zámku. Desktopové i mobilní screenshoty a povinný web-game klient vizuálně zkontrolovány. Bez JS chyb. Původní uživatelova karta s dokončenou hrou edice 005 zachována; nová edice otevřena v nové kartě.
 
 ## Git a aktuální stav
 

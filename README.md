@@ -9,9 +9,10 @@ Otevři `index.html` v prohlížeči. Hra funguje lokálně, bez instalace a bez
 - Více dílků se zobrazí na dalších stránkách zásobníku. Duplicity mají štítek **DUP**.
 - **Předloha** zvýrazní obrázek na desce.
 - **Nová hra** vyprázdní zásobník, šrotovač i obrázek a vynuluje čas.
-- **F** přepíná celou obrazovku.
+- **F** přepíná celou obrazovku během hry.
+- Po složení puzzle se celé herní ovládání zamkne a vedle **Nový dílek** se objeví **Vyber odměnu**. Zatím otevře potvrzení dokončení; konkrétní odměny ještě nejsou určené. Pro novou hru po dokončení znovu načti stránku.
 
-Pro vývoj použij `npm start` (vyžaduje Python 3). Server načítá aktuální soubory a zakazuje mezipaměť. Aktuální verzi poznáš podle označení **MYSTIC EDITION / 005**.
+Pro vývoj použij `npm start` (vyžaduje Python 3). Server načítá aktuální soubory a zakazuje mezipaměť. Aktuální verzi poznáš podle označení **REWARD EDITION / 006**.
 
 ## Konfigurace
 

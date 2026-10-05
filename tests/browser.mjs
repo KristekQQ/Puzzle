@@ -48,6 +48,7 @@ assert.equal(await page.locator('#hero-image').getAttribute('src'), 'assets/40my
 assert(Math.abs((await state()).board.w / (await state()).board.h - 1406 / 860) < 1e-6, 'source aspect ratio preserved');
 assert.equal((await state()).total, 9); assert.equal((await state()).pieces.length, 0); assert.equal((await state()).mode, 'playing');
 assert(await page.locator('#recycle').isDisabled());
+assert(await page.locator('#choose-reward').isHidden());
 await page.screenshot({ path: 'output/empty.png', fullPage: true });
 await page.click('#preview'); assert.equal((await state()).preview, true); await page.click('#preview');
 let p = await drawType(0);
@@ -101,12 +102,37 @@ await clickPiece((await state()).pieces.find(p => p.id === clicked.id)); assert.
 await page.click('#return-pieces');
 // Complete entire puzzle by drawing and placing each type through real controls.
 await page.click('#shuffle'); assert.equal((await state()).pieces.length, 0); assert.equal((await state()).placed, 0); assert.equal((await state()).elapsed, 0);
+await page.keyboard.press('f'); await page.waitForTimeout(150); assert(await page.evaluate(() => !!document.fullscreenElement)); await page.keyboard.press('f');
+// Keep a full recycler and several inventory pages when winning to test every lock.
+for (let i = 0; i < 3; i++) await scrap(await drawType(0));
+for (let i = 0; i < 11; i++) await drawType(0);
 for (let typeId = 0; typeId < 9; typeId++) await place(await drawType(typeId));
 assert.equal((await state()).mode, 'complete'); assert.equal((await state()).placed, 9);
 const finishedTime = (await state()).elapsed; await page.evaluate(() => window.advanceTime(3000)); assert.equal((await state()).elapsed, finishedTime);
 await page.screenshot({ path: 'output/complete.png', fullPage: true });
-await page.keyboard.press('f'); await page.waitForTimeout(150); assert(await page.evaluate(() => !!document.fullscreenElement)); await page.keyboard.press('f');
-await page.click('#shuffle'); await page.setViewportSize({ width: 390, height: 844 });
+assert.equal((await state()).uiLocked, true);
+assert(await page.locator('#choose-reward').isVisible());
+const lockedState = await state();
+for (const id of ['draw-piece', 'preview', 'shuffle', 'fullscreen', 'recycle', 'return-pieces', 'previous-page', 'next-page']) {
+  assert(await page.locator(`#${id}`).isDisabled(), `${id} locked after win`);
+  // Dispatch bypasses the HTML disabled attribute: handlers must also guard game state.
+  await page.locator(`#${id}`).dispatchEvent('click');
+}
+await page.keyboard.press('f');
+assert.equal(await page.evaluate(() => !!document.fullscreenElement), false);
+const freePiece = lockedState.pieces.find(p => p.location === 'inventory' && p.visible);
+await clickPiece(freePiece, 25);
+await clickPiece(lockedState.pieces.find(p => p.location === 'recycler'), 25);
+assert.deepEqual(await state(), lockedState, 'locked actions do not change game state');
+await page.click('#choose-reward'); assert.equal((await state()).rewardDialogOpen, true);
+await page.screenshot({ path: 'output/reward-dialog.png', fullPage: true });
+await page.click('#reward-dialog button'); assert.equal((await state()).rewardDialogOpen, false);
+assert.equal((await state()).uiLocked, true);
+await page.setViewportSize({ width: 390, height: 844 });
+await page.locator('#choose-reward').scrollIntoViewIfNeeded();
+assert(await page.locator('#choose-reward').isVisible());
+await page.screenshot({ path: 'output/mobile-complete.png', fullPage: true });
+await start(); await page.setViewportSize({ width: 390, height: 844 });
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).width === 660);
 p = await drawType(0); await scrap(p); assert.equal((await state()).recyclerIds.length, 1);
 await page.click('#return-pieces'); p = (await state()).pieces.find(item => item.id === p.id); await place(p); assert.equal((await state()).placed, 1);
@@ -117,5 +143,5 @@ await page.addInitScript(() => { Object.defineProperty(window, 'PUZZLE_CONFIG', 
 await start(); assert.equal((await state()).total, 20); assert.equal((await state()).pieces.length, 0); await place(await drawType(19)); assert.equal((await state()).placed, 1);
 await scrap(await drawType(19)); await scrap(await drawType(19)); await scrap(await drawType(19)); await page.click('#recycle'); assert.equal((await state()).recyclerIds.length, 0);
 assert.deepEqual(errors, []);
-console.log('PASS: new Mystic Gem image and native aspect ratio; drag-only; click has no transfer effect in inventory or recycler; mobile drag; empty start; draws with duplicates; stable geometry; DPR2 drag; wrong drop; duplicate snap blocked; recycler 1/2/3/4 slots; exact 3→1 including duplicate reward; return; paging; reset; full win; stopped timer; fullscreen; mobile; 5x4; no JS errors.');
+console.log('PASS: new Mystic Gem image and native aspect ratio; drag-only; click has no transfer effect in inventory or recycler; mobile drag; empty start; draws with duplicates; stable geometry; DPR2 drag; wrong drop; duplicate snap blocked; recycler 1/2/3/4 slots; exact 3→1 including duplicate reward; return; paging; reset; full win; reward button/dialog; all UI and pointer/keyboard actions locked with leftovers; mobile reward; stopped timer; fullscreen; mobile; 5x4; no JS errors.');
 await browser.close();

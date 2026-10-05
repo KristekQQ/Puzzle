@@ -26,7 +26,7 @@ Testuj skutečné pointer vstupy a ověř mezistav i výsledek přes `render_gam
 
 Po vizuální změně otevři aktuální snímky v `output/`, posuď čitelnost, celé tvary dílků, překryvy a pokračování obrázku. Samotný screenshot bez interakce nedokazuje funkční hru. Při `file://` může screenshotový export canvasu selhat; použij HTTP. Neměň hru kvůli tomuto omezení exportu.
 
-Dokončení odvozuj od počtu obsazených typů, nikoli od všech získaných kopií. Volné duplicity a prázdný inventář nesmějí narušit vyhodnocení výhry. Losování neomezuj na chybějící typy.
+Dokončení odvozuj od počtu obsazených typů, nikoli od všech získaných kopií. Volné duplicity a prázdný inventář nesmějí narušit vyhodnocení výhry. Losování neomezuj na chybějící typy. Po dokončení zamkni všechny herní akce i jejich event handlery včetně F, nové hry a pointer vstupů. Aktivní zůstává „Vyber odměnu“; před dokončením je skryté. Ověř zámek se zbylými kopiemi a plným šrotovačem, otevření/zavření dialogu a mobilní rozložení. Konkrétní odměny zatím nejsou specifikované.
 
 Současný test předpokládá výchozí 3 × 3 a následně přepisuje config na 5 × 4. Pokud uživatel změní výchozí nastavení, přizpůsob test novému zadání. Neoznačuj fyzické dotykové ovládání za ověřené na základě testu myší v mobilním viewportu.
 
