@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Kousek — obraz po obrazu</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><a class="brand" href="./index.html"><span class="brand-mark">✣</span> kousek<span class="brand-dot">.</span></a><span class="edition">MALÁ PAUZA, VELKÝ OBRÁZEK</span><span class="version">PRVNÍ EDICE / 001</span></header>
+<main>
+<section class="intro"><div><div class="eyebrow">POSKLÁDEJ SI CHVÍLI KLIDU</div><h1>Každý kousek má své místo.</h1><p id="description">Jeden obrázek. 9 dílků. A trochu radosti z toho, když zapadnou.</p></div><div class="art-label"><span class="status-dot"></span> CHATA U JEZERA <small id="art-count">9 dílků · ilustrace</small></div></section>
+<section class="game-shell" aria-label="Puzzle hra">
+<div class="toolbar"><div class="stats"><span><strong id="count">0</strong><span class="muted"> / <span id="total">9</span> dílků</span></span><span class="divider"></span><span id="timer">00:00</span></div><div class="actions"><button id="preview" aria-pressed="false">◉ <span>Předloha</span></button><button id="shuffle">↻ <span>Zamíchat</span></button><button id="fullscreen" aria-label="Celá obrazovka" title="Celá obrazovka (F)">⛶</button></div></div>
+<div class="workspace"><canvas id="puzzle" aria-label="Přetáhni dílky z pravé strany na jejich místo v obrázku."></canvas><div id="loading">Připravuji tvoje puzzle…</div></div>
+<div class="game-footer"><span><span class="status-dot"></span> <span id="message">Vezmi dílek a přetáhni ho na jeho místo.</span></span><span class="footer-note">SPRÁVNÝ DÍLEK SÁM ZAPADNE</span></div>
+</section>
+<footer><span>Malé kousky. Velká radost.</span><span>Vytvořeno pro chvíli bez spěchu <span class="flower">✳</span></span></footer>
+</main><script src="config.js"></script><script src="game.js"></script>
+</body></html>
