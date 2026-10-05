@@ -1,20 +1,21 @@
 <!DOCTYPE html>
 <html lang="cs">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Kousek — obraz po obrazu</title><link rel="stylesheet" href="style.css"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Kousek — obraz po obrazu</title><link rel="stylesheet" href="style.css?v=005-mystic"></head>
 <body>
-<header><a class="brand" href="./index.html"><span class="brand-mark">✣</span> kousek<span class="brand-dot">.</span></a><span class="edition">MALÁ PAUZA, VELKÝ OBRÁZEK</span><span class="version">DRUHÁ EDICE / 002</span></header>
+<header><div class="header-tag"><span class="header-bars">☰</span> PUZZLE ARCADE</div><a class="brand" href="./index.html"><span class="brand-mark">✦</span><span>KOUSEK <b>PLAY</b></span></a><span class="version">MYSTIC EDITION / 005</span></header>
 <main>
-<section class="intro"><div><div class="eyebrow">POSKLÁDEJ SI CHVÍLI KLIDU</div><h1>Každý kousek má své místo.</h1><p id="description">Získej náhodné dílky. Poskládej obrázek. Tři nepotřebné vyměň za nový.</p></div><div class="art-label"><span class="status-dot"></span> CHATA U JEZERA <small id="art-count">9 dílků · ilustrace</small></div></section>
+<section class="intro"><div class="hero-copy"><div class="eyebrow">SBÍREJ. VYMĚŇUJ. SKLÁDEJ.</div><h1>KAŽDÝ DÍLEK<br><span>MĚNÍ HRU.</span></h1><p id="description">Získej náhodné dílky. Poskládej obrázek. Tři nepotřebné vyměň za nový.</p><div class="hero-tags"><span>✦ NÁHODNÉ DÍLKY</span><span>↻ VÝMĚNA 3 ZA 1</span></div></div><div class="hero-art"><img id="hero-image" src="assets/40mysticgem_tile_large.jpg" alt="Předloha puzzle: 40 Mystic Gem"><div class="art-label"><span id="art-title">40 MYSTIC GEM</span><strong id="grid-size">3 × 3</strong><small id="art-count">9 DÍLKŮ · ILUSTRACE</small></div></div></section>
+<div class="section-heading"><h2>TVŮJ HERNÍ STŮL</h2><span><i class="status-dot"></i> PŘETÁHNI A HRAJ</span></div>
 <section class="game-shell" aria-label="Puzzle hra">
 <div class="toolbar"><div class="stats"><span><strong id="count">0</strong><span class="muted"> / <span id="total">9</span> dílků</span></span><span class="divider"></span><span id="timer">00:00</span></div><div class="actions"><button id="preview" aria-pressed="false">◉ <span>Předloha</span></button><button id="shuffle">↻ <span>Nová hra</span></button><button id="fullscreen" aria-label="Celá obrazovka" title="Celá obrazovka (F)">⛶</button></div></div>
 <div class="collection-bar">
-<div class="draw-controls"><button id="draw-piece" class="primary" disabled>＋ <span>Nový dílek</span></button><span class="draw-note">Náhodný výběr · i s duplicitami</span></div>
+<div class="draw-controls"><button id="draw-piece" class="primary" disabled>＋ <span>Nový dílek</span></button><span class="draw-note">Náhodný výběr · duplicity patří do šrotovače</span></div>
 <div class="inventory-controls"><span>V zásobníku: <strong id="inventory-count">0</strong></span><div class="pagination"><button id="previous-page" aria-label="Předchozí stránka zásobníku" disabled>‹</button><span id="page-label">1 / 1</span><button id="next-page" aria-label="Další stránka zásobníku" disabled>›</button></div></div>
 </div>
-<div class="workspace"><canvas id="puzzle" aria-label="Získej nový dílek tlačítkem. Přetáhni ho do obrázku nebo dej tři nepotřebné dílky do šrotovače."></canvas><div id="loading">Připravuji tvoje puzzle…</div></div>
+<div class="workspace"><canvas id="puzzle" aria-label="Získej nový dílek tlačítkem. Přetáhni ho do obrázku nebo přetáhni tři nepotřebné dílky do šrotovače."></canvas><div id="loading">Připravuji tvoje puzzle…</div></div>
 <div class="exchange-bar"><div><strong>Šrotovač <span id="recycler-count">0 / 3</span></strong><span class="exchange-note">Tři vložené dílky se vymění za jeden náhodný.</span></div><div class="actions"><button id="return-pieces" disabled>Vrátit dílky</button><button id="recycle" class="primary" disabled>Vyměnit 3 → 1</button></div></div>
 <div class="game-footer"><span><span class="status-dot"></span> <span id="message" aria-live="polite">Začni tlačítkem „Nový dílek“.</span></span><span class="footer-note">SPRÁVNÝ DÍLEK SÁM ZAPADNE</span></div>
 </section>
-<footer><span>Malé kousky. Velká radost.</span><span>Vytvořeno pro chvíli bez spěchu <span class="flower">✳</span></span></footer>
-</main><script src="config.js"></script><script src="game.js"></script>
+<footer><span>✦ KOUSEK PLAY</span><span>JEDEN OBRÁZEK. TVOJE HRA.</span></footer>
+</main><script src="config.js?v=005-mystic"></script><script src="game.js?v=005-mystic"></script>
 </body></html>

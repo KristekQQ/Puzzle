@@ -31,10 +31,21 @@ async function place(p, dx = 0, dy = 0) {
   const s = await state();
   await dragTo(p, { x: p.targetX + s.board.w / s.columns / 2 + dx, y: p.targetY + s.board.h / s.rows / 2 + dy });
 }
+async function clickPiece(p, jitter = 0) {
+  await page.locator('canvas').scrollIntoViewIfNeeded();
+  const s = await state(), rect = await page.locator('canvas').boundingBox();
+  const x = rect.x + (p.x + s.board.w / s.columns / 2 * p.scale) * rect.width / s.width;
+  const y = rect.y + (p.y + s.board.h / s.rows / 2 * p.scale) * rect.height / s.height;
+  await page.mouse.move(x, y); await page.mouse.down();
+  if (jitter) await page.mouse.move(x + jitter, y + jitter);
+  await page.mouse.up();
+}
 async function scrap(p) {
   const s = await state(); await dragTo(p, { x: s.recycler.x + s.recycler.w / 2, y: s.recycler.y + s.recycler.h / 2 });
 }
 await start();
+assert.equal(await page.locator('#hero-image').getAttribute('src'), 'assets/40mysticgem_tile_large.jpg');
+assert(Math.abs((await state()).board.w / (await state()).board.h - 1406 / 860) < 1e-6, 'source aspect ratio preserved');
 assert.equal((await state()).total, 9); assert.equal((await state()).pieces.length, 0); assert.equal((await state()).mode, 'playing');
 assert(await page.locator('#recycle').isDisabled());
 await page.screenshot({ path: 'output/empty.png', fullPage: true });
@@ -80,6 +91,14 @@ s = await state(); assert.equal(s.pages, 2); assert.equal(s.page, 2);
 assert.equal(s.pieces.filter(p => p.location === 'inventory' && p.visible).length, s.inventoryCount - 9);
 await page.click('#previous-page'); assert.equal((await state()).page, 1);
 await page.click('#next-page'); assert.equal((await state()).page, 2);
+// Clicking no longer moves a piece into or out of the recycler.
+await page.click('#shuffle');
+let clicked = await drawType(0);
+await clickPiece(clicked); assert.equal((await state()).recyclerIds.length, 0);
+assert.equal((await state()).inventoryCount, 1);
+await scrap((await state()).pieces.find(p => p.id === clicked.id));
+await clickPiece((await state()).pieces.find(p => p.id === clicked.id)); assert.equal((await state()).recyclerIds.length, 1);
+await page.click('#return-pieces');
 // Complete entire puzzle by drawing and placing each type through real controls.
 await page.click('#shuffle'); assert.equal((await state()).pieces.length, 0); assert.equal((await state()).placed, 0); assert.equal((await state()).elapsed, 0);
 for (let typeId = 0; typeId < 9; typeId++) await place(await drawType(typeId));
@@ -91,10 +110,12 @@ await page.click('#shuffle'); await page.setViewportSize({ width: 390, height: 8
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).width === 660);
 p = await drawType(0); await scrap(p); assert.equal((await state()).recyclerIds.length, 1);
 await page.click('#return-pieces'); p = (await state()).pieces.find(item => item.id === p.id); await place(p); assert.equal((await state()).placed, 1);
-await drawType(0); await page.screenshot({ path: 'output/mobile.png', fullPage: true });
+p = await drawType(0); await clickPiece(p); assert.equal((await state()).recyclerIds.length, 0);
+await scrap(p); assert.equal((await state()).recyclerIds.length, 1);
+await page.screenshot({ path: 'output/mobile.png', fullPage: true });
 await page.addInitScript(() => { Object.defineProperty(window, 'PUZZLE_CONFIG', { configurable: true, get: () => ({ columns: 5, rows: 4, image: 'assets/lake-cottage.png' }), set: () => {} }); });
 await start(); assert.equal((await state()).total, 20); assert.equal((await state()).pieces.length, 0); await place(await drawType(19)); assert.equal((await state()).placed, 1);
 await scrap(await drawType(19)); await scrap(await drawType(19)); await scrap(await drawType(19)); await page.click('#recycle'); assert.equal((await state()).recyclerIds.length, 0);
 assert.deepEqual(errors, []);
-console.log('PASS: empty start; draws with duplicates; stable geometry; DPR2 drag; wrong drop; duplicate snap blocked; recycler 1/2/3/4 slots; exact 3→1 including duplicate reward; return; paging; reset; full win; stopped timer; fullscreen; mobile; 5x4; no JS errors.');
+console.log('PASS: new Mystic Gem image and native aspect ratio; drag-only; click has no transfer effect in inventory or recycler; mobile drag; empty start; draws with duplicates; stable geometry; DPR2 drag; wrong drop; duplicate snap blocked; recycler 1/2/3/4 slots; exact 3→1 including duplicate reward; return; paging; reset; full win; stopped timer; fullscreen; mobile; 5x4; no JS errors.');
 await browser.close();

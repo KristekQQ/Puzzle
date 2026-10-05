@@ -4,10 +4,15 @@
   const image = new Image(), config = window.PUZZLE_CONFIG || {};
   const size = value => Math.max(1, Math.min(12, Math.round(Number(value) || 3)));
   const cols = size(config.columns), rows = size(config.rows), total = cols * rows;
-  const pw = 480 / cols, ph = 320 / rows, capacity = total;
+  const capacity = total;
+  let boardWidth = 480, boardHeight = 320, pw = boardWidth / cols, ph = boardHeight / rows;
   const ui = Object.fromEntries(['count', 'timer', 'message', 'draw-piece', 'recycle', 'return-pieces', 'inventory-count', 'page-label', 'previous-page', 'next-page', 'recycler-count'].map(id => [id, document.getElementById(id)]));
   document.querySelector('#total').textContent = total;
-  document.querySelector('#art-count').textContent = `${total} dílků · ilustrace`;
+  document.querySelector('#art-count').textContent = `${total} DÍLKŮ · ILUSTRACE`;
+  document.querySelector('#grid-size').textContent = `${cols} × ${rows}`;
+  document.querySelector('#hero-image').src = config.image || 'assets/lake-cottage.png';
+  document.querySelector('#hero-image').alt = `Předloha puzzle: ${config.title || 'Puzzle'}`;
+  document.querySelector('#art-title').textContent = config.title || 'Puzzle';
   document.querySelector('#description').textContent = 'Získej náhodné dílky. Poskládej obrázek. Tři nepotřebné vyměň za nový.';
   let templates = [], pieces = [], recyclerIds = [], nextId = 1, page = 0;
   let board, tray, recycler, width, height, dragging = null, preview = false, ready = false;
@@ -36,9 +41,9 @@
   function layout() {
     const mobile = window.innerWidth <= 760;
     width = mobile ? 660 : 1240; height = mobile ? 1280 : 720;
-    board = { x: mobile ? 90 : 55, y: mobile ? 68 : 108, w: 480, h: 320 };
+    board = { x: (mobile ? 90 : 55) + (480 - boardWidth) / 2, y: (mobile ? 68 : 108) + (320 - boardHeight) / 2, w: boardWidth, h: boardHeight };
     tray = { x: mobile ? 60 : 650, y: mobile ? 730 : 58, w: 540, h: 460 };
-    recycler = { x: board.x, y: mobile ? 465 : 510, w: 480, h: 170 };
+    recycler = { x: mobile ? 90 : 55, y: mobile ? 465 : 510, w: 480, h: 170 };
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = width * dpr; canvas.height = height * dpr;
     canvas.style.aspectRatio = `${width} / ${height}`; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -58,9 +63,9 @@
     });
     recyclerIds.forEach((id, i) => {
       const p = pieces.find(p => p.id === id); if (!p || dragging?.p === p) return;
-      p.scale = Math.min(1, 116 / pw, 76 / ph);
+      p.scale = Math.min(1, 108 / pw, 60 / ph);
       p.x = recycler.x + i * 160 + (160 - pw * p.scale) / 2;
-      p.y = recycler.y + 60 + (76 - ph * p.scale) / 2;
+      p.y = recycler.y + 76 + (60 - ph * p.scale) / 2;
     });
   }
   function reset() {
@@ -118,7 +123,7 @@
   function drawPiece(p, shadow = false) {
     ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.scale, p.scale);
     if (shadow) {
-      ctx.shadowColor = '#24332b45'; ctx.shadowBlur = dragging?.p === p ? 16 : 5;
+      ctx.shadowColor = '#00000099'; ctx.shadowBlur = dragging?.p === p ? 16 : 5;
       ctx.shadowOffsetY = dragging?.p === p ? 6 : 2; ctx.fillStyle = '#fff'; ctx.fill(p.path);
     }
     ctx.shadowColor = 'transparent'; ctx.save(); ctx.clip(p.path);
@@ -134,37 +139,37 @@
   }
   function draw() {
     if (!board) return;
-    ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#eeeee5'; ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = '#d9ddd140';
+    ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#1c192b'; ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#ffffff08';
     for (let y = 12; y < height; y += 20) for (let x = 12; x < width; x += 20) { ctx.beginPath(); ctx.arc(x, y, .8, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = '#798373'; ctx.font = '10px Arial'; ctx.fillText('TVŮJ OBRÁZEK', board.x, board.y - 27); ctx.fillText('ZÁSOBNÍK DÍLKŮ', tray.x, tray.y - 18);
-    roundedRect(board.x - 12, board.y - 12, board.w + 24, board.h + 24, 5, '#d2d8c9');
-    roundedRect(board.x - 3, board.y - 3, board.w + 6, board.h + 6, 2, '#fafbf3');
-    ctx.fillStyle = '#e1e6d8'; ctx.fillRect(board.x, board.y, board.w, board.h);
-    roundedRect(recycler.x, recycler.y, recycler.w, recycler.h, 10, '#e4e1d5');
-    ctx.strokeStyle = '#acae99'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
+    ctx.fillStyle = '#b6adc9'; ctx.font = '10px Arial'; ctx.fillText('TVŮJ OBRÁZEK', board.x, board.y - 27); ctx.fillText('ZÁSOBNÍK DÍLKŮ', tray.x, tray.y - 18);
+    roundedRect(board.x - 12, board.y - 12, board.w + 24, board.h + 24, 5, '#776445');
+    roundedRect(board.x - 3, board.y - 3, board.w + 6, board.h + 6, 2, '#d9bb7a');
+    ctx.fillStyle = '#302c40'; ctx.fillRect(board.x, board.y, board.w, board.h);
+    roundedRect(recycler.x, recycler.y, recycler.w, recycler.h, 10, '#302139');
+    ctx.strokeStyle = '#e9328e'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
     ctx.beginPath(); ctx.roundRect(recycler.x, recycler.y, recycler.w, recycler.h, 10); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = '#6e735f'; ctx.font = 'bold 11px Arial'; ctx.fillText('ŠROTOVAČ · TŘI DÍLKY ZA JEDEN', recycler.x + 16, recycler.y + 25);
-    ctx.font = '11px Arial'; ctx.fillText('Přetáhni sem nepotřebné dílky. Můžeš je zase vytáhnout.', recycler.x + 16, recycler.y + 44);
+    ctx.fillStyle = '#f5d9e8'; ctx.font = 'bold 11px Arial'; ctx.fillText('ŠROTOVAČ · TŘI DÍLKY ZA JEDEN', recycler.x + 16, recycler.y + 25);
+    ctx.font = '11px Arial'; ctx.fillText('Přetáhni sem 3 dílky. Vyměň je za nový náhodný dílek.', recycler.x + 16, recycler.y + 44);
     for (let i = 0; i < 3; i++) {
-      roundedRect(recycler.x + i * 160 + 10, recycler.y + 58, 140, 100, 6, '#f4f2e9');
-      if (!recyclerIds[i]) { ctx.fillStyle = '#bcc0af'; ctx.font = '24px Georgia'; ctx.textAlign = 'center'; ctx.fillText(String(i + 1), recycler.x + i * 160 + 80, recycler.y + 118); ctx.textAlign = 'left'; }
+      roundedRect(recycler.x + i * 160 + 10, recycler.y + 58, 140, 100, 6, '#1c1729');
+      if (!recyclerIds[i]) { ctx.fillStyle = '#7c6589'; ctx.font = '24px Georgia'; ctx.textAlign = 'center'; ctx.fillText(String(i + 1), recycler.x + i * 160 + 80, recycler.y + 118); ctx.textAlign = 'left'; }
     }
     if (ready) {
       ctx.save(); ctx.globalAlpha = preview ? .66 : .08; ctx.drawImage(image, board.x, board.y, board.w, board.h); ctx.restore();
-      templates.forEach(t => { ctx.save(); ctx.translate(board.x + t.col * pw, board.y + t.row * ph); ctx.strokeStyle = '#bcc6b388'; ctx.lineWidth = 1; ctx.stroke(t.path); ctx.restore(); });
+      templates.forEach(t => { ctx.save(); ctx.translate(board.x + t.col * pw, board.y + t.row * ph); ctx.strokeStyle = '#d0b57666'; ctx.lineWidth = 1; ctx.stroke(t.path); ctx.restore(); });
       pieces.filter(p => p.locked).forEach(p => drawPiece(p));
       visibleInventory().filter(p => dragging?.p !== p).forEach(p => drawPiece(p, true));
       recyclerIds.map(id => pieces.find(p => p.id === id)).filter(p => p && dragging?.p !== p).forEach(p => drawPiece(p, true));
       if (dragging) drawPiece(dragging.p, true);
       if (!inventory().length) {
-        ctx.textAlign = 'center'; ctx.fillStyle = '#8c9786'; ctx.font = '32px Georgia'; ctx.fillText('+', tray.x + tray.w / 2, tray.y + 170);
-        ctx.font = '20px Georgia'; ctx.fillText('Každý obrázek začíná jedním kouskem.', tray.x + tray.w / 2, tray.y + 210);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#b5acc7'; ctx.font = '32px Georgia'; ctx.fillText('+', tray.x + tray.w / 2, tray.y + 170);
+        ctx.font = 'bold 20px Arial'; ctx.fillText('TVŮJ PRVNÍ DÍLEK ČEKÁ.', tray.x + tray.w / 2, tray.y + 210);
         ctx.font = '12px Arial'; ctx.fillText('Klikni na „Nový dílek“ a zkus štěstí.', tray.x + tray.w / 2, tray.y + 238); ctx.textAlign = 'left';
       }
-      if (complete()) { ctx.fillStyle = '#47634c'; ctx.textAlign = 'center'; ctx.font = 'italic 23px Georgia'; ctx.fillText('Kousek po kousku. Hotovo.', board.x + board.w / 2, board.y + board.h + 44); ctx.textAlign = 'left'; }
+      if (complete()) { ctx.fillStyle = '#f2c870'; ctx.textAlign = 'center'; ctx.font = 'bold 23px Arial'; ctx.fillText('Kousek po kousku. Hotovo.', board.x + board.w / 2, board.y + board.h + 44); ctx.textAlign = 'left'; }
     }
-    if (width > 660) { ctx.strokeStyle = '#d4d8ca'; ctx.beginPath(); ctx.moveTo(594, 36); ctx.lineTo(594, height - 36); ctx.stroke(); }
+    if (width > 660) { ctx.strokeStyle = '#ffffff16'; ctx.beginPath(); ctx.moveTo(594, 36); ctx.lineTo(594, height - 36); ctx.stroke(); }
   }
   function pointer(e) {
     const r = canvas.getBoundingClientRect();
@@ -179,13 +184,14 @@
     const pos = pointer(e), visible = [...visibleInventory(), ...recyclerIds.map(id => pieces.find(p => p.id === id))];
     for (let i = visible.length - 1; i >= 0; i--) {
       const p = visible[i]; if (!p || !hit(p, pos)) continue;
-      dragging = { p, dx: (pos.x - p.x) / p.scale, dy: (pos.y - p.y) / p.scale };
-      p.scale = 1; p.x = pos.x - dragging.dx; p.y = pos.y - dragging.dy;
-      canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); updateStats(); draw(); e.preventDefault(); break;
+      dragging = { p, dx: (pos.x - p.x) / p.scale, dy: (pos.y - p.y) / p.scale, moved: false };
+      canvas.setPointerCapture(e.pointerId); updateStats(); draw(); e.preventDefault(); break;
     }
   });
   canvas.addEventListener('pointermove', e => {
-    if (!dragging) return; const pos = pointer(e), p = dragging.p;
+    if (!dragging) return;
+    dragging.moved = true; canvas.classList.add('dragging');
+    const pos = pointer(e), p = dragging.p; p.scale = 1;
     p.x = Math.max(20, Math.min(width - pw - 20, pos.x - dragging.dx));
     p.y = Math.max(25, Math.min(height - ph - 25, pos.y - dragging.dy)); draw();
   });
@@ -193,16 +199,16 @@
     if (!dragging) return;
     const p = dragging.p, center = { x: p.x + pw / 2, y: p.y + ph / 2 };
     const inRecycler = center.x >= recycler.x && center.x <= recycler.x + recycler.w && center.y >= recycler.y && center.y <= recycler.y + recycler.h;
-    if (!cancel && Math.hypot(p.x - p.targetX, p.y - p.targetY) < Math.min(25, pw * .25, ph * .25)) {
+    if (!cancel && dragging.moved && Math.hypot(p.x - p.targetX, p.y - p.targetY) < Math.min(25, pw * .25, ph * .25)) {
       if (placedTypes.has(p.typeId)) { recyclerIds = recyclerIds.filter(id => id !== p.id); setMessage('Toto místo už je složené. Duplicitní dílek můžeš dát do šrotovače.'); }
       else {
         p.locked = true; placedTypes.add(p.typeId); recyclerIds = recyclerIds.filter(id => id !== p.id);
         setMessage(complete() ? 'Hotovo! Všechny kousky zapadly. Užij si svůj obrázek.' : 'Zapadlo! Další kousek čeká v zásobníku nebo v novém losování.');
       }
-    } else if (!cancel && inRecycler) {
+    } else if (!cancel && dragging.moved && inRecycler) {
       if (!recyclerIds.includes(p.id) && recyclerIds.length < 3) recyclerIds.push(p.id);
       setMessage(recyclerIds.length === 3 ? 'Šrotovač je připraven. Vyměň tři dílky za jeden náhodný.' : `Ve šrotovači je ${recyclerIds.length} / 3 dílků. Přidej další.`);
-    } else if (!cancel) {
+    } else if (!cancel && dragging.moved) {
       recyclerIds = recyclerIds.filter(id => id !== p.id);
       const index = inventory().findIndex(item => item.id === p.id); page = Math.floor(index / capacity);
       setMessage('Dílek je zpátky v zásobníku. Zkus jiné místo.');
@@ -232,7 +238,12 @@
       targetX: p.targetX, targetY: p.targetY, locked: p.locked, duplicate: isDuplicate(p), edges: p.edges,
       location: p.locked ? 'board' : recyclerIds.includes(p.id) ? 'recycler' : 'inventory', visible: p.locked || recyclerIds.includes(p.id) || visibleInventory().includes(p) }))
   });
-  image.onload = () => { ready = true; document.querySelector('#loading').classList.add('hidden'); reset(); };
+  image.onload = () => {
+    const fit = Math.min(480 / image.naturalWidth, 320 / image.naturalHeight);
+    boardWidth = image.naturalWidth * fit; boardHeight = image.naturalHeight * fit;
+    pw = boardWidth / cols; ph = boardHeight / rows;
+    ready = true; layout(); document.querySelector('#loading').classList.add('hidden'); reset();
+  };
   image.onerror = () => { document.querySelector('#loading').textContent = 'Obrázek se nepodařilo načíst. Zkontroluj cestu k obrázku v config.js.'; };
   layout(); updateStats(); image.src = config.image || 'assets/lake-cottage.png';
 })();

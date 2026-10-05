@@ -2,5 +2,6 @@
 window.PUZZLE_CONFIG = {
   columns: 3,
   rows: 3,
-  image: 'assets/lake-cottage.png'
+  image: 'assets/40mysticgem_tile_large.jpg',
+  title: '40 Mystic Gem'
 };
