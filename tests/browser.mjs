@@ -2,29 +2,99 @@ import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 mkdirSync('output', { recursive: true });
-const browser=await chromium.launch({headless:true});
-const page=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:2});
-const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const state=()=>page.evaluate(()=>JSON.parse(window.render_game_to_text()));
-async function start(){await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>JSON.parse(window.render_game_to_text()).mode==='playing');}
-async function drag(p,dx=0,dy=0){await page.locator('canvas').scrollIntoViewIfNeeded();const s=await state(),r=await page.locator('canvas').boundingBox();
-const columns=new Set(s.pieces.map(p=>p.targetX)).size,rows=new Set(s.pieces.map(p=>p.targetY)).size;
-const hw=s.board.w/columns/2,hh=s.board.h/rows/2;
-const at=(x,y)=>({x:r.x+x*r.width/s.width,y:r.y+y*r.height/s.height});
-const a=at(p.x+hw,p.y+hh),b=at(p.targetX+hw+dx,p.targetY+hh+dy);
-await page.mouse.move(a.x,a.y);await page.mouse.down();assert.equal((await state()).dragging,p.id,'picked the correct piece');await page.mouse.move(b.x,b.y,{steps:12});await page.mouse.up();}
-await start();assert.equal((await state()).total,9);
-await page.screenshot({path:'output/desktop.png',fullPage:true});
-await page.click('#preview');assert.equal((await state()).preview,true);await page.click('#preview');
-let s=await state();await drag(s.pieces[0],70,60);assert.equal((await state()).placed,0,'wrong location does not snap');
-await drag((await state()).pieces.find(p=>p.id===0),5,4);assert.equal((await state()).placed,1);
-await page.screenshot({path:'output/one-piece.png',fullPage:true});
-for(const p of (await state()).pieces.filter(p=>!p.locked))await drag(p);
-assert.equal((await state()).mode,'complete');assert.equal((await state()).placed,9);await page.screenshot({path:'output/complete.png',fullPage:true});
-await page.click('#shuffle');assert.equal((await state()).placed,0);await page.keyboard.press('f');await page.waitForTimeout(150);assert(await page.evaluate(()=>!!document.fullscreenElement));await page.keyboard.press('f');
-await page.setViewportSize({width:390,height:844});await page.waitForFunction(()=>JSON.parse(window.render_game_to_text()).width===660);s=await state();assert.equal(s.width,660);await drag(s.pieces[0]);assert.equal((await state()).placed,1);await page.screenshot({path:'output/mobile.png',fullPage:true});
-// Exercise configuration without modifying the delivered 3x3 default.
-await page.addInitScript(()=>{Object.defineProperty(window,'PUZZLE_CONFIG',{configurable:true,get:()=>({columns:5,rows:4,image:'assets/lake-cottage.png'}),set:()=>{}});});
-await start();assert.equal((await state()).total,20);await drag((await state()).pieces[0]);assert.equal((await state()).placed,1);
-assert.deepEqual(errors,[]);console.log('PASS: 3x3; actual pointer drag on DPR2; wrong drop; all pieces + win; preview; shuffle; fullscreen; mobile; 5x4 configuration; no JS errors.');
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 2 });
+const errors = []; page.on('pageerror', e => errors.push(e.message));
+const state = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
+async function start() {
+  await page.goto('http://127.0.0.1:5173');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+}
+async function drawType(typeId) {
+  const s = await state();
+  // Force rare duplicate outcomes in tests while exercising the real draw button.
+  await page.evaluate(value => { Math.random = () => value; }, (typeId + .25) / s.total);
+  await page.click('#draw-piece');
+  return (await state()).pieces.at(-1);
+}
+async function dragTo(p, destination) {
+  await page.locator('canvas').scrollIntoViewIfNeeded();
+  const s = await state(), rect = await page.locator('canvas').boundingBox();
+  const hw = s.board.w / s.columns / 2, hh = s.board.h / s.rows / 2;
+  const at = (x, y) => ({ x: rect.x + x * rect.width / s.width, y: rect.y + y * rect.height / s.height });
+  const a = at(p.x + hw * p.scale, p.y + hh * p.scale), b = at(destination.x, destination.y);
+  await page.mouse.move(a.x, a.y); await page.mouse.down();
+  assert.equal((await state()).dragging, p.id, 'picked correct instance on DPR2');
+  await page.mouse.move(b.x, b.y, { steps: 12 }); await page.mouse.up();
+}
+async function place(p, dx = 0, dy = 0) {
+  const s = await state();
+  await dragTo(p, { x: p.targetX + s.board.w / s.columns / 2 + dx, y: p.targetY + s.board.h / s.rows / 2 + dy });
+}
+async function scrap(p) {
+  const s = await state(); await dragTo(p, { x: s.recycler.x + s.recycler.w / 2, y: s.recycler.y + s.recycler.h / 2 });
+}
+await start();
+assert.equal((await state()).total, 9); assert.equal((await state()).pieces.length, 0); assert.equal((await state()).mode, 'playing');
+assert(await page.locator('#recycle').isDisabled());
+await page.screenshot({ path: 'output/empty.png', fullPage: true });
+await page.click('#preview'); assert.equal((await state()).preview, true); await page.click('#preview');
+let p = await drawType(0);
+await place(p, 70, 60); assert.equal((await state()).placed, 0, 'wrong drop does not snap');
+p = (await state()).pieces.find(item => item.id === p.id);
+await place(p, 5, 4); assert.equal((await state()).placed, 1);
+let duplicate = await drawType(0);
+assert(duplicate.duplicate); assert.notEqual(duplicate.id, p.id); assert.deepEqual(duplicate.edges, p.edges);
+await place(duplicate); assert.equal((await state()).placed, 1, 'duplicate does not double count or lock');
+assert.equal((await state()).pieces.filter(p => p.locked).length, 1);
+await scrap((await state()).pieces.find(item => item.id === duplicate.id));
+assert.equal((await state()).recyclerIds.length, 1); assert(await page.locator('#recycle').isDisabled());
+// Pull a scaled piece from recycler back to the inventory, then put it in again.
+let selected = (await state()).pieces.find(item => item.id === duplicate.id);
+let s = await state(); await dragTo(selected, { x: 970, y: 200 });
+assert.equal((await state()).recyclerIds.length, 0);
+await scrap((await state()).pieces.find(item => item.id === duplicate.id));
+await scrap(await drawType(0)); assert.equal((await state()).recyclerIds.length, 2);
+const beforeInvalid = (await state()).pieces.length;
+await page.evaluate(() => document.querySelector('#recycle').click()); assert.equal((await state()).pieces.length, beforeInvalid);
+await scrap(await drawType(0)); assert.equal((await state()).recyclerIds.length, 3);
+assert(!(await page.locator('#recycle').isDisabled()));
+const extra = await drawType(1); await scrap(extra);
+assert.equal((await state()).recyclerIds.length, 3, 'fourth piece cannot enter full recycler');
+assert.equal((await state()).pieces.find(item => item.id === extra.id).location, 'inventory');
+await page.screenshot({ path: 'output/recycler-ready.png', fullPage: true });
+const consumedIds = (await state()).recyclerIds, beforeExchange = (await state()).pieces.length;
+await page.evaluate(() => { Math.random = () => .01; }); await page.click('#recycle');
+s = await state();
+assert.equal(s.pieces.length, beforeExchange - 2, 'exactly three consumed, one created');
+assert(consumedIds.every(id => !s.pieces.some(p => p.id === id)));
+assert.equal(s.recyclerIds.length, 0); assert.equal(s.pieces.at(-1).typeId, 0); assert(s.pieces.at(-1).duplicate, 'exchange also permits duplicates');
+assert.equal(s.placed, 1, 'placed piece survives exchange');
+await page.screenshot({ path: 'output/exchanged.png', fullPage: true });
+// Returning selected pieces never gives a free random draw.
+await scrap(s.pieces.at(-1)); const beforeReturn = (await state()).pieces.length;
+await page.click('#return-pieces'); assert.equal((await state()).recyclerIds.length, 0); assert.equal((await state()).pieces.length, beforeReturn);
+// Inventory pages must support repeated draws without hiding them permanently.
+for (let i = 0; i < 11; i++) await drawType(0);
+s = await state(); assert.equal(s.pages, 2); assert.equal(s.page, 2);
+assert.equal(s.pieces.filter(p => p.location === 'inventory' && p.visible).length, s.inventoryCount - 9);
+await page.click('#previous-page'); assert.equal((await state()).page, 1);
+await page.click('#next-page'); assert.equal((await state()).page, 2);
+// Complete entire puzzle by drawing and placing each type through real controls.
+await page.click('#shuffle'); assert.equal((await state()).pieces.length, 0); assert.equal((await state()).placed, 0); assert.equal((await state()).elapsed, 0);
+for (let typeId = 0; typeId < 9; typeId++) await place(await drawType(typeId));
+assert.equal((await state()).mode, 'complete'); assert.equal((await state()).placed, 9);
+const finishedTime = (await state()).elapsed; await page.evaluate(() => window.advanceTime(3000)); assert.equal((await state()).elapsed, finishedTime);
+await page.screenshot({ path: 'output/complete.png', fullPage: true });
+await page.keyboard.press('f'); await page.waitForTimeout(150); assert(await page.evaluate(() => !!document.fullscreenElement)); await page.keyboard.press('f');
+await page.click('#shuffle'); await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).width === 660);
+p = await drawType(0); await scrap(p); assert.equal((await state()).recyclerIds.length, 1);
+await page.click('#return-pieces'); p = (await state()).pieces.find(item => item.id === p.id); await place(p); assert.equal((await state()).placed, 1);
+await drawType(0); await page.screenshot({ path: 'output/mobile.png', fullPage: true });
+await page.addInitScript(() => { Object.defineProperty(window, 'PUZZLE_CONFIG', { configurable: true, get: () => ({ columns: 5, rows: 4, image: 'assets/lake-cottage.png' }), set: () => {} }); });
+await start(); assert.equal((await state()).total, 20); assert.equal((await state()).pieces.length, 0); await place(await drawType(19)); assert.equal((await state()).placed, 1);
+await scrap(await drawType(19)); await scrap(await drawType(19)); await scrap(await drawType(19)); await page.click('#recycle'); assert.equal((await state()).recyclerIds.length, 0);
+assert.deepEqual(errors, []);
+console.log('PASS: empty start; draws with duplicates; stable geometry; DPR2 drag; wrong drop; duplicate snap blocked; recycler 1/2/3/4 slots; exact 3→1 including duplicate reward; return; paging; reset; full win; stopped timer; fullscreen; mobile; 5x4; no JS errors.');
 await browser.close();
